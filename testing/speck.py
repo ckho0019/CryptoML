@@ -12,12 +12,6 @@ def BETA():
 
 MASK_VAL = 2 ** WORD_SIZE() - 1
 
-def shuffle_together(l):
-    state = np.random.get_state()
-    for x in l:
-        np.random.set_state(state)
-        np.random.shuffle(x)
-
 def rol(x,k):
     return(((x << k) & MASK_VAL) | (x >> (WORD_SIZE() - k)))
 
@@ -69,6 +63,8 @@ def decrypt(c, ks):
 # and so on
 # it returns an array of bit vectors containing the same data
 def convert_to_binary(arr, n):
+  assert n in [2,4]
+  assert len(arr) == n*2
   X = np.zeros((2 * n * WORD_SIZE(),len(arr[0])), dtype=np.uint8)
   for i in range(2 * n * WORD_SIZE()):
     index = i // WORD_SIZE()
@@ -76,30 +72,6 @@ def convert_to_binary(arr, n):
     X[i] = (arr[index] >> offset) & 1
   X = X.transpose()
   return X
-
-# takes a text file that contains encrypted block0, block1, true diff prob, real or random
-# data samples are line separated, the above items whitespace-separated
-# returns train data, ground truth, optimal ddt prediction
-def readcsv(datei):
-    data = np.genfromtxt(datei, delimiter=' ', converters={x: lambda s: int(s,16) for x in range(2)})
-    X0 = [data[i][0] for i in range(len(data))]
-    X1 = [data[i][1] for i in range(len(data))]
-    Y = [data[i][3] for i in range(len(data))]
-    Z = [data[i][2] for i in range(len(data))]
-    ct0a = [X0[i] >> 16 for i in range(len(data))]
-    ct1a = [X0[i] & MASK_VAL for i in range(len(data))]
-    ct0b = [X1[i] >> 16 for i in range(len(data))]
-    ct1b = [X1[i] & MASK_VAL for i in range(len(data))]
-    ct0a = np.array(ct0a, dtype=np.uint16) 
-    ct1a = np.array(ct1a,dtype=np.uint16)
-    ct0b = np.array(ct0b, dtype=np.uint16) 
-    ct1b = np.array(ct1b, dtype=np.uint16)
-    
-    # X = [[X0[i] >> 16, X0[i] & 0xffff, X1[i] >> 16, X1[i] & 0xffff] for i in range(len(data))]
-    X = convert_to_binary([ct0a, ct1a, ct0b, ct1b]) 
-    Y = np.array(Y, dtype=np.uint8) 
-    Z = np.array(Z)
-    return X,Y,Z
 
 # baseline training data generator for 2 plaintexts
 def make_train_data_2pt(n, nr, diff=(0x0040,0)):
@@ -117,7 +89,6 @@ def make_train_data_2pt(n, nr, diff=(0x0040,0)):
   ctdata0l, ctdata0r = encrypt((plain0l, plain0r), ks)
   ctdata1l, ctdata1r = encrypt((plain1l, plain1r), ks)
   X = convert_to_binary([ctdata0l, ctdata0r, ctdata1l, ctdata1r], 2)
-  
   return X,Y
 
 # real differences data generator for 2 plaintexts
