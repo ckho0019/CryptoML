@@ -223,7 +223,7 @@ def make_train_data_2pt(n, nr, diff=(0x0040,0)):
     ctdata1l, ctdata1r = encrypt((plain1l, plain1r), ks)
     X = convert_to_binary([ctdata0l, ctdata0r, ctdata1l, ctdata1r], 2)
   
-  return X,Y
+    return X,Y
 
 
 def real_differences_data_2pt(n, nr, diff=(0x0040,0)):
